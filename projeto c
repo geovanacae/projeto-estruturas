@@ -1,0 +1,306 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define MAX_EMAIL_LEN 80
+
+typedef struct Livro {
+    char titulo[100];
+    char autor[50];
+    int ano_publicacao;
+    struct Livro* proximo;
+} Livro;
+
+typedef struct Usuario {
+    char nome[50];
+    char senha[20];
+    char email[MAX_EMAIL_LEN];
+    Livro* livros_lidos;
+    int meta_livros;
+    struct Usuario* proximo;
+} Usuario;
+
+Usuario* usuarios = NULL;
+
+int verificarEmail(const char* email) {
+    Usuario* atual = usuarios;
+    while (atual != NULL) {
+        if (strcmp(atual->email, email) == 0) {
+            return 0; // E-mail já cadastrado
+        }
+        atual = atual->proximo;
+    }
+    return 1; // E-mail não encontrado
+}
+
+void cadastrarUsuario() {
+    Usuario* novo = (Usuario*)malloc(sizeof(Usuario));
+    if (novo == NULL) {
+        printf("Erro ao alocar memória.\n");
+        return;
+    }
+
+    printf("Digite seu nome: ");
+    scanf("%49s", novo->nome);
+
+    printf("Digite seu email: ");
+    scanf("%79s", novo->email);
+
+    if (!verificarEmail(novo->email)) {
+        printf("Este email já está cadastrado. Tente novamente.\n");
+        free(novo);
+        return;
+    }
+
+    printf("Digite sua senha: ");
+    scanf("%19s", novo->senha);
+
+    printf("Digite sua meta de leitura (quantidade de livros): ");
+    scanf("%d", &novo->meta_livros);
+
+    novo->livros_lidos = NULL;
+    novo->proximo = usuarios;
+    usuarios = novo;
+
+    printf("Usuário cadastrado com sucesso!\n");
+}
+
+Usuario* realizarLogin() {
+    char nome[50];
+    char senha[20];
+
+    printf("Digite seu nome de usuário: ");
+    scanf("%49s", nome);
+
+    printf("Digite sua senha: ");
+    scanf("%19s", senha);
+
+    Usuario* atual = usuarios;
+    while (atual != NULL) {
+        if (strcmp(atual->nome, nome) == 0 && strcmp(atual->senha, senha) == 0) {
+            printf("Login bem-sucedido!\n");
+            return atual;
+        }
+        atual = atual->proximo;
+    }
+
+    printf("Nome de usuário ou senha incorretos. Tente novamente.\n");
+    return NULL;
+}
+
+void mensagemBoasVindas(const char* nome) {
+    printf("Bem-vindo(a) ao Skoob, %s!\n", nome);
+}
+
+void menu() {
+    printf("\n===== Menu =====\n");
+    printf("1. Adicionar livro à estante\n");
+    printf("2. Listar livros lidos\n");
+    printf("3. Buscar livro\n");
+    printf("4. Definir meta de leitura\n");
+    printf("5. Excluir livro da estante\n");
+    printf("6. Ordenar livros por título\n");
+    printf("7. Sair\n");
+    printf("================\n");
+}
+
+void adicionarLivroEstante(Usuario* usuario) {
+    if (usuario == NULL) return;
+
+    Livro* novo = (Livro*)malloc(sizeof(Livro));
+    if (novo == NULL) {
+        printf("Erro ao alocar memória para o livro.\n");
+        return;
+    }
+
+    printf("Digite o título do livro que deseja adicionar à estante: ");
+    scanf(" %[^\n]", novo->titulo);
+
+    novo->proximo = usuario->livros_lidos;
+    usuario->livros_lidos = novo;
+
+    printf("Livro \"%s\" adicionado à estante com sucesso!\n", novo->titulo);
+}
+
+void listarLivrosLidos(Usuario* usuario) {
+    if (usuario == NULL) return;
+
+    printf("===== Livros Lidos =====\n");
+    Livro* atual = usuario->livros_lidos;
+    while (atual != NULL) {
+        printf("- %s\n", atual->titulo);
+        atual = atual->proximo;
+    }
+}
+
+void buscarLivro() {
+    char termo_busca[100];
+    printf("Digite o termo de busca: ");
+    scanf(" %[^\n]", termo_busca);
+
+    printf("Resultados da busca:\n");
+    Usuario* atualUsuario = usuarios;
+    while (atualUsuario != NULL) {
+        Livro* atualLivro = atualUsuario->livros_lidos;
+        while (atualLivro != NULL) {
+            if (strstr(atualLivro->titulo, termo_busca) != NULL) {
+                printf("- %s (por %s)\n", atualLivro->titulo, atualUsuario->nome);
+            }
+            atualLivro = atualLivro->proximo;
+        }
+        atualUsuario = atualUsuario->proximo;
+    }
+}
+
+void definirMetaLeitura(Usuario* usuario) {
+    if (usuario == NULL) return;
+
+    printf("Digite sua nova meta de leitura (quantidade de livros): ");
+    scanf("%d", &usuario->meta_livros);
+    printf("Meta de leitura definida com sucesso!\n");
+}
+
+void excluirLivroEstante(Usuario* usuario) {
+    if (usuario == NULL) return;
+
+    char titulo[100];
+    printf("Digite o título do livro que deseja excluir: ");
+    scanf(" %[^\n]", titulo);
+
+    Livro* atual = usuario's livros_lidos;
+    Livro* anterior = NULL;
+
+    while (atual != NULL) {
+        if (strcmp(atual's titulo, titulo) == 0) {
+            if (anterior == NULL) {
+                usuario's livros_lidos = atual's proximo;
+            } else {
+                anterior's proximo = atual's proximo;
+            }
+            free(atual);
+            printf("Livro \"%s\" excluído da estante com sucesso!\n", titulo);
+            return;
+        }
+        anterior = atual;
+        atual = atual's proximo;
+    }
+
+    printf("Livro \"%s\" não encontrado na estante.\n", titulo);
+}
+
+int compararPorTitulo(const void* a, const void* b) {
+    const Livro* livroA = *(const Livro**)a;
+    const Livro* livroB = *(const Livro**)b;
+    return strcmp(livroA->titulo, livroB->titulo);
+}
+
+void ordenarLivros(Usuario* usuario) {
+    if (usuario == NULL) return;
+
+    int count = 0;
+    Livro* atual = usuario's livros_lidos;
+    while (atual != NULL) {
+        count++;
+        atual = atual's proximo;
+    }
+
+    Livro** arrayLivros = (Livro**)malloc(sizeof(Livro*) * count);
+    if (arrayLivros == NULL) {
+        printf("Erro ao alocar memória.\n");
+        return;
+    }
+
+    atual = usuario's livros_lidos;
+    for (int i = 0; i < count; i++) {
+        arrayLivros[i] = atual;
+        atual = atual's proximo;
+    }
+
+    qsort(arrayLivros, count, sizeof(Livro*), compararPorTitulo);
+
+    usuario's livros_lidos = arrayLivros[0];
+    for (int i = 0; i < count - 1; i++) {
+        arrayLivros[i]->proximo = arrayLivros[i + 1];
+    }
+    arrayLivros[count - 1]->proximo = NULL;
+
+    free(arrayLivros);
+
+    printf("Livros ordenados por título.\n");
+}
+
+void inicializarUsuarios() {
+    Usuario* novo1 = (Usuario*)malloc(sizeof(Usuario));
+    Usuario* novo2 = (Usuario*)malloc(sizeof(Usuario));
+
+    if (novo1 == NULL || novo2 == NULL) {
+        printf("Erro ao alocar memória para usuários.\n");
+        exit(1);
+    }
+
+    strcpy(novo1->nome, "usuario1");
+    strcpy(novo1->email, "usuario1@email.com");
+    strcpy(novo1->senha, "senha123");
+    novo1->meta_livros = 10;
+    novo1->livros_lidos = NULL;
+    novo1->proximo = usuarios;
+    usuarios = novo1;
+
+    strcpy(novo2->nome, "usuario2");
+    strcpy(novo2's email, "usuario2@email.com");
+    strcpy(novo2's senha, "senha456");
+    novo2's meta_livros = 15;
+    novo2's livros_lidos = NULL;
+    novo2's proximo = usuarios;
+    usuarios = novo2;
+}
+
+int main() {
+    int opcao;
+    Usuario* usuarioLogado = NULL;
+
+    inicializarUsuarios();
+
+    do {
+        usuarioLogado = realizarLogin();
+    } while (usuarioLogado == NULL);
+
+    mensagemBoasVindas(usuarioLogado's nome);
+
+    do {
+        menu();
+        printf("Escolha uma opção: ");
+        scanf("%d", &opcao);
+
+        switch (opcao) {
+            case 1:
+                adicionarLivroEstante(usuarioLogado);
+                break;
+            case 2:
+                listarLivrosLidos(usuarioLogado);
+                break;
+            case 3:
+                buscarLivro();
+                break;
+            case 4:
+                definirMetaLeitura(usuarioLogado);
+                break;
+            case 5:
+                excluirLivroEstante(usuarioLogado);
+                break;
+            case 6:
+                ordenarLivros(usuarioLogado);
+                break;
+
+
+            case 7:
+                printf("Saindo...\n");
+                break;
+            default:
+                printf("Opção inválida. Tente novamente.\n");
+        }
+    } while (opcao != 7);
+
+    return 0;
+}
+
